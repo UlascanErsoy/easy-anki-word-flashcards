@@ -7,6 +7,7 @@
         }
     </style>
     <link rel="stylesheet" href="bulma.min.css">
+
 </head>
 <body>
 <nav class="navbar is-fixed-top is-info" role="navigation" aria-label="main navigation">
@@ -19,25 +20,113 @@
 <div class="pt-6" id="notification-area">
 
     </div>
-<div class="columns box" style="background-color:#c2def7;height:100%">
+<div class="columns box" style="background-color:#c2def7;height:96%">
   <div class="column box is-one-quarter" style="height:100%">
 <aside class="menu">
-    <button class="button is-primary is-fullwidth">Add</button>
-  <p class="menu-label">
-    Words 
+    <button onclick="add_word()" class="button is-primary is-fullwidth">Add</button>
+  <p id="menu-title" class="menu-label">
+    Words (0) 
   </p>
-  <ul class="menu-list">
-    <li><a>Dashboard</a></li>
+  <ul id="menu-list" class="menu-list">
     <li><a>Customers</a></li>
   </ul>
 </aside>
   </div>
-  <div class="column box">
-<h1>This is a heading</h1>
-<p>This is a paragraph.</p>
+  <div class="column ml-2 box">
+      <div class="field">
+  <label class="label">Word</label>
+      <div class="control">
+    <input onchange="update_word()" id="word" class="input" type="text" placeholder="Text input">
+  </div>
 
+  <div class="field mt-2">
+      <label class="label">Type</label>
+      <div class="select">
+        <select onchange="update_word()" id="type">
+          <option value="other">Other</option>
+          <option value="noun">Noun</option>
+          <option value="verb">Verb</option>
+          <option value="adjective">Adjective</option>
+          <option value="adverb">Adverb</option>
+          <option value="auxilary verb">Auxiliary Verb</option>
+          <option value="measure word">Measure Word</option>
+        </select>
+      </div>
+    </div>
+    </div>
+      <div class="field">
+  <label class="label">Definition</label>
+      <div class="control">
+    <input onchange="update_word()" id="definition" class="input" type="text" placeholder="Text input">
   </div>
     </div>
 
+    <div class="field">
+      <label class="label">Example Sentences</label>
+      <div class="control">
+        <textarea onchange="update_word()" id="examples" class="textarea" placeholder="Sentence (Translation)"></textarea>
+      </div>
+    </div>
+
+    <button onclick="remove_word()" class="button is-danger is-fullwidth mt-4">Remove</button>
+  </div>
+    </div>
+<script>
+    var WORDS = [{"word":"你好", "definition":"Hello", "type":"adjective","examples":"hello(hi)"}]
+    var SELECTED_WORD = 0;
+
+        function view_word(id) {
+            const word = WORDS[id];
+            SELECTED_WORD = id;
+
+            document.getElementById("word").value = word.word;
+            document.getElementById("type").value = word.type;
+            document.getElementById("examples").value = word.examples;
+            document.getElementById("definition").value = word.definition;
+            
+        }
+        function render_list() {
+            document.getElementById("menu-list").innerHTML = "";
+            document.getElementById("menu-title").innerHTML = "Words (" + WORDS.length + ")";
+            let idx = 0;
+            for (word of WORDS) { 
+                document.getElementById("menu-list").innerHTML += "<li><a onclick=\"view_word("+ idx +")\">"+ word.word + "</a></li>"
+                idx++;
+            }
+
+        }
+
+        function remove_word() {
+            WORDS.splice(SELECTED_WORD, 1)
+            render_list();
+            view_word(SELECTED_WORD-1);
+        }
+        
+        function update_word() {
+           WORDS[SELECTED_WORD] = {
+                word:document.getElementById("word").value,
+                type:document.getElementById("type").value,
+                examples:document.getElementById("examples").value,
+                definition:document.getElementById("definition").value
+        }
+           
+        render_list()
+        console.log(WORDS,SELECTED_WORD);
+        }
+
+        function add_word() {
+            WORDS.push({
+                word:document.getElementById("word").value || ornyin "Empty",
+                type:document.getElementById("type").value,
+                examples:document.getElementById("examples").value,
+                definition:document.getElementById("definition").value
+        })
+        render_list()
+        SELECTED_WORD = WORDS.length - 1;
+        console.log(WORDS,SELECTED_WORD)
+        }
+
+        render_list()
+    </script>
 </body>
 </html>
