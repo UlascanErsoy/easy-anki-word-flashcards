@@ -31,7 +31,7 @@
     </div>
 <div class="columns box" style="background-color:#c2def7;height:96%">
   <div class="column box is-one-quarter" style="height:100%">
-<aside class="menu">
+<aside class="menu is-fullheight" style="overflow:hidden;height:100%;">
 
     <input id="deckname" class="input" type="text" placeholder="Deck Name">
     <button onclick="build_basic_cards()" class="button is-gray is-fullwidth">Build Basic</button>
@@ -40,9 +40,11 @@
   <p id="menu-title" class="menu-label">
     Words (0) 
   </p>
+  <div style="overflow-y: auto; height:100%;">
   <ul id="menu-list" class="menu-list">
     <li><a>Customers</a></li>
   </ul>
+  </div>
 </aside>
   </div>
   <div class="column ml-2 box">
@@ -177,6 +179,7 @@
         function build_examples(examples,word){
 
             let result = "";
+            console.log(examples,word)
             for(example of examples.split(/\r?\n/)) {
                 const [original, translation] = example.split("|")
                 const pinyin = convert_to_pinyin(original); 
