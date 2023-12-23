@@ -7,7 +7,8 @@
         }
     </style>
     <link rel="stylesheet" href="bulma.min.css">
-
+    <script src="cedict.js"></script>
+    <script src="pinyin.js"></script>
 </head>
 <body>
 <nav class="navbar is-fixed-top is-info" role="navigation" aria-label="main navigation">
@@ -16,6 +17,14 @@
         <p class="subtitle">Anki Deck Creator</p>
     </a>
   </div>
+    <div class="navbar-end mr-2">
+        <div class="buttons">
+          <a onclick="clear_deck()" class="button is-danger">
+            <strong>Clear Deck</strong>
+          </a>
+        </div>
+    </div>
+
 </nav>    
 <div class="pt-6" id="notification-area">
 
@@ -23,7 +32,11 @@
 <div class="columns box" style="background-color:#c2def7;height:96%">
   <div class="column box is-one-quarter" style="height:100%">
 <aside class="menu">
-    <button onclick="add_word()" class="button is-primary is-fullwidth">Add</button>
+
+    <input id="deckname" class="input" type="text" placeholder="Deck Name">
+    <button onclick="build_basic_cards()" class="button is-gray is-fullwidth">Build Basic</button>
+    <button onclick="build_cloze_cards()" class="mt-2 button is-gray is-fullwidth">Build Cloze</button>
+    <button onclick="add_word()" class="mt-2 button is-primary is-fullwidth">Add</button>
   <p id="menu-title" class="menu-label">
     Words (0) 
   </p>
@@ -68,11 +81,22 @@
       </div>
     </div>
 
+      <div class="field">
+      <label class="label">Source</label>
+          <div class="control">
+        <input onchange="update_word()" id="source" class="input" type="text" placeholder="Text input">
+      </div>
+
     <button onclick="remove_word()" class="button is-danger is-fullwidth mt-4">Remove</button>
   </div>
     </div>
 <script>
-    var WORDS = [{"word":"你好", "definition":"Hello", "type":"adjective","examples":"hello(hi)"}]
+    var WORDS = [{"word":"你好", "definition":"Hello", "type":"adjective","examples":"奇葩的土耳其经济，和它怼天怼地的总统| hi","source":"https://www.youtube.com/watch?v=nDysKDELhig&amp;t=3"}]
+
+    if (localStorage.getItem("WORDS") != null) {
+        WORDS = JSON.parse(localStorage.getItem("WORDS"));
+    }
+
     var SELECTED_WORD = 0;
 
         function view_word(id) {
@@ -83,6 +107,7 @@
             document.getElementById("type").value = word.type;
             document.getElementById("examples").value = word.examples;
             document.getElementById("definition").value = word.definition;
+            document.getElementById("source").value = word.source;
             
         }
         function render_list() {
@@ -93,6 +118,7 @@
                 document.getElementById("menu-list").innerHTML += "<li><a onclick=\"view_word("+ idx +")\">"+ word.word + "</a></li>"
                 idx++;
             }
+            localStorage.setItem("WORDS", JSON.stringify(WORDS));
 
         }
 
@@ -107,25 +133,226 @@
                 word:document.getElementById("word").value,
                 type:document.getElementById("type").value,
                 examples:document.getElementById("examples").value,
-                definition:document.getElementById("definition").value
+                definition:document.getElementById("definition").value,
+                source:document.getElementById("source").value
         }
-           
+
         render_list()
         console.log(WORDS,SELECTED_WORD);
         }
 
+        function download(filename, text) {
+          var element = document.createElement('a');
+          element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+          element.setAttribute('download', filename);
+
+          element.style.display = 'none';
+          document.body.appendChild(element);
+
+          element.click();
+
+          document.body.removeChild(element);
+        }
+
+        function convert_to_pinyin(sentence) {
+            let pinyin = "";
+            for(let idx=0; idx < sentence.length; ++idx) {
+                for(let jdx=sentence.length - idx; jdx > 0; --jdx){
+                    let t = jdx > 1 ? HANZI[sentence.slice(idx,idx+jdx)] : HANZI2[sentence.slice(idx,idx+jdx)];
+                    if(t != undefined){
+                        if(t instanceof Array){
+                            pinyin += t.join("");
+                        }else{
+                            pinyin += t;
+                        }
+                        idx += jdx - 1;
+                        break;
+                    }
+                }
+                pinyin+=" ";
+
+            }
+            return pinyin;
+        }
+        function build_examples(examples,word){
+
+            let result = "";
+            for(example of examples.split(/\r?\n/)) {
+                const [original, translation] = example.split("|")
+                const pinyin = convert_to_pinyin(original); 
+                result += `<tr>
+                            <td>${original.trim().replace(word,"<b>"+word+"</b>")}</td>
+                            <td>${pinyin}</td>
+                            <td>${translation.trim()}</td>
+                            </tr>`;
+            }
+
+            return result;
+        }
+
+        function build_basic_cards() {
+            let csv = "";
+
+            for (word of WORDS) {
+                let word_pinyin = convert_to_pinyin(word.word);
+                let back = `<style>
+                                .tag {
+                                  padding: 5px;
+                                  border-radius: 5px;
+                                  }
+                                .other {
+                                  background-color: gray;
+                                  color:white;
+                                  font-weight:800;
+                                  }
+                                  .noun {
+                                  background-color: green;
+                                  color:white;
+                                  font-weight:800;
+                                  }
+                                   .adverb {
+                                  background-color: orange;
+                                  color:white;
+                                  font-weight:800;
+                                  }
+                                  .adjective {
+                                  background-color: red;
+                                  color:white;
+                                  font-weight:800;
+                                  }
+                                  .aux-verb {
+                                  background-color: blue;
+                                  color:white;
+                                  font-weight:800;
+                                  }
+                                    .measure {
+                                  background-color: black;
+                                  color:white;
+                                  font-weight:800;
+                                  }
+                                  td {
+                                    padding: 10px;
+                                    border-right: 1px solid black;
+                                  }
+                                  table {
+                                    width: 100%;
+                                    margin-top:10px;
+                                    border: 1px solid black;
+                                    border-collapse: collapse;
+                                  }
+                                </style>
+                                <span class="${word.type.replace('auxilary ','aux-')} tag">${word.type}</span> <b>${word.definition}</b>
+                                <br><br><b>Pinyin:</b><br>
+                                ${word_pinyin} 
+                                <br><br> <u>Example(s):</u><br>
+                                <table>
+                                    ${build_examples(word.examples,word.word)}
+                                </table> 
+                                <br><br>
+                                <hr>
+                                <a href="${word.source}">Source Link</a>`;
+
+                csv+= word.word + "\t" + back.replace(/(\r\n|\n|\r)/gm, "") + "\n";
+            }
+
+            download(`basic_${document.getElementById('deckname').value}.csv`, csv);
+        }
+
+        function build_cloze_cards() {
+            let csv = "";
+
+            for (word of WORDS) {
+                let word_pinyin = convert_to_pinyin(word.word);
+                let word_examples = word.examples.split(/\r?\n/);
+                if(word_examples.length == 0){
+                    continue;
+                }
+
+                let example = word_examples[0].replace(word.word, "{{c1::" + word.word + "}}")+"<hr>";
+
+                let back = `<style>
+                                .tag {
+                                  padding: 5px;
+                                  border-radius: 5px;
+                                  }
+                                .other {
+                                  background-color: gray;
+                                  color:white;
+                                  font-weight:800;
+                                  }
+                                  .noun {
+                                  background-color: green;
+                                  color:white;
+                                  font-weight:800;
+                                  }
+                                   .adverb {
+                                  background-color: orange;
+                                  color:white;
+                                  font-weight:800;
+                                  }
+                                  .adjective {
+                                  background-color: red;
+                                  color:white;
+                                  font-weight:800;
+                                  }
+                                  .aux-verb {
+                                  background-color: blue;
+                                  color:white;
+                                  font-weight:800;
+                                  }
+                                    .measure {
+                                  background-color: black;
+                                  color:white;
+                                  font-weight:800;
+                                  }
+                                  td {
+                                    padding: 10px;
+                                    border-right: 1px solid black;
+                                  }
+                                  table {
+                                    width: 100%;
+                                    margin-top:10px;
+                                    border: 1px solid black;
+                                    border-collapse: collapse;
+                                  }
+                                </style>
+                                <span class="${word.type.replace('auxilary ','aux-')} tag">${word.type}</span> <b>${word.definition}</b>
+                                <br><br><b>Pinyin:</b><br>
+                                ${word_pinyin} 
+                                <br><br> <u>Example(s):</u><br>
+                                <table>
+                                    ${build_examples(word.examples,word.word)}
+                                </table> 
+                                <br><br>
+                                <hr>
+                                <a href="${word.source}">Source Link</a>`;
+
+                csv+= example + "\t" + back.replace(/(\r\n|\n|\r)/gm, "") + "\n";
+            }
+
+            download(`cloze_${document.getElementById('deckname').value}.csv`, csv);
+        }
+
         function add_word() {
             WORDS.push({
-                word:document.getElementById("word").value || ornyin "Empty",
+                word:document.getElementById("word").value || "Empty",
                 type:document.getElementById("type").value,
                 examples:document.getElementById("examples").value,
-                definition:document.getElementById("definition").value
+                definition:document.getElementById("definition").value,
+                source:document.getElementById("source").value
         })
+
         render_list()
         SELECTED_WORD = WORDS.length - 1;
         console.log(WORDS,SELECTED_WORD)
         }
 
+        function clear_deck() {
+            WORDS = [];
+            SELECTED_WORD = 0;
+            render_list();
+        }
+       
         render_list()
     </script>
 </body>
